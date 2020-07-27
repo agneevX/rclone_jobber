@@ -35,12 +35,11 @@ timestamp="$(date +%F_%T)"
 ################################ logging options #############################
 # set to false if you want to turn off logging
 log=true
-
 if [ "$log" = true ]; then
 	# set log_file path
 	path="$(realpath "$0")"                 # this will place log in the same directory as this script
-	#log_file="${path%.*}.log"
-	log_file="/var/log/rclone_jobber.log" 
+	log_file="${path%.*}.log"
+	#log_file="/var/log/rclone_jobber.log" 
 	
 	log_option="--log-file=$log_file"       # log to log_file
 	#log_option="--syslog"                  # log to systemd journal
@@ -48,7 +47,6 @@ if [ "$log" = true ]; then
 	send_to_log()
 	{
 	    msg="$1"
-
  	   # set log - send msg to log
  	   echo "$msg" >> "$log_file"                             # log msg to log_file
  	   #printf "$msg" | systemd-cat -t RCLONE_JOBBER -p info   # log msg to systemd journal
@@ -60,11 +58,12 @@ fi
 ############################### healthchecks.io ###############################
 if [[ "$monitoring_url" = *"hc.io"* ]]; then
 	hc=true
-	# set this to false if you want to store logs locally or not send to healthchecks
-	log_to_hc=true
-	# enable verbosity level (from v to vvv - INFO -> DEBUG -> TRACE)
-	# log_option="-v"
-	log_option=""
+	log_to_hc=true		# set this to false if you want to store logs locally or not send to healthchecks
+	# log_option="-q"	# no logs including errors are sent to healthchecks
+	log_option="" 		# set to -v to send INFO logs, or -vv to send INFO and DEBUG logs 
+else
+	hc=false
+	log_to_hc=false
 fi
 
 # print message to echo, log, and popup
@@ -76,7 +75,7 @@ print_message()
 
     echo "$message"
     send_to_log "$(date +%F_%T) $message"
-    warning_icon="/usr/share/icons/Adwaita/32x32/emblems/emblem-synchronizing.png"   #path in Fedora 28
+    warning_icon="/usr/share/icons/Adwaita/32x32/emblems/emblem-synchronizing.png"   # path in Fedora 28
     # notify-send is a popup notification on most Linux desktops, install `libnotify-bin`
     command -v notify-send && notify-send --urgency critical --icon "$warning_icon" "$message"
 }
@@ -122,24 +121,21 @@ elif [ "$move_old_files_to" != "" ]; then
     backup_dir="--backup-dir=$dest/$timestamp"
 fi
 
-<<<<<<< Updated upstream
-=======
 # notify healthchecks.io to measure command run time
 if [ "$hc" = true ]; then
     curl -fsS --retry 3 --quiet "$monitoring_url/start" -O /dev/null
     exit 0
 fi
 
->>>>>>> Stashed changes
 ################################### back up ##################################
 if [ "$hc" = false ] || [ "$log_to_hc" = false ]; then
 	cmd="rclone sync $source $dest/$new $backup_dir $log_option $options"
+	# progress message
+	echo "Back up in progress $timestamp $job_name"
+	echo "$cmd"
 elif [ "$log_to_hc" = true ]; then
-	output=$("rclone sync $source $dest/$new $backup_dir $options")
+	output=$("rclone sync $source $dest/$new $backup_dir $log_option $options")
 fi
-# progress message
-echo "Back up in progress $timestamp $job_name"
-echo "$cmd"
 
 # set logging to verbose
 #send_to_log "$timestamp $job_name"
@@ -154,19 +150,14 @@ if [ "$exit_code" -eq 0 ]; then            # if no errors
     echo "$confirmation"
     send_to_log "$confirmation"
     send_to_log ""
-<<<<<<< Updated upstream
-    if [ ! -z "$monitoring_URL" ]; then
-        wget --quiet $monitoring_URL -O /dev/null
-=======
-    if [ -n "$monitoring_url" ]; then
-        curl -fsS --retry 3 --quiet "$monitoring_url" -O /dev/null
->>>>>>> Stashed changes
+    if [ "$hc" = true ]; then
+		curl -fsS --retry 3 --quiet "$monitoring_url" -O /dev/null
     fi
     exit 0
 else
     print_message "ERROR" "failed.  rclone exit_code=$exit_code"
     if [ "$hc" = true ]; then
-        curl -fsS --retry 3 --data-raw "$output" "$monitoring_url/fail" -O /dev/null
+		curl -fsS --retry 3 --data-raw "$output" "$monitoring_url/fail" -O /dev/null
     fi
     send_to_log ""
     exit 1
