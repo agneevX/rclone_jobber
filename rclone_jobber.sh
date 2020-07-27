@@ -39,7 +39,7 @@ if [ "$log" = true ]; then
 	# set log_file path
 	path="$(realpath "$0")"                 # this will place log in the same directory as this script
 	log_file="${path%.*}.log"
-	#log_file="/var/log/rclone_jobber.log" 
+	#log_file="/var/log/rclone_jobber.log"
 
 	log_option="--log-file=$log_file"       # log to log_file
 	#log_option="--syslog"                  # log to systemd journal
@@ -50,6 +50,19 @@ if [ "$log" = true ]; then
  	   # set log - send msg to log
  	   echo "$msg" >> "$log_file"                             # log msg to log_file
  	   #printf "$msg" | systemd-cat -t RCLONE_JOBBER -p info   # log msg to systemd journal
+	}
+	# print message to echo, log, and popup
+	print_message()
+	{
+	    urgency="$1"
+	    msg="$2"
+	    message="${urgency}: $job_name $msg"
+
+	    echo "$message"
+ 	   send_to_log "$(date +%F_%T) $message"
+ 	   warning_icon="/usr/share/icons/Adwaita/32x32/emblems/emblem-synchronizing.png"   # path in Fedora 28
+ 	   # notify-send is a popup notification on most Linux desktops, install `libnotify-bin`
+ 	   command -v notify-send && notify-send --urgency critical --icon "$warning_icon" "$message"
 	}
 else
 	log_option=""
@@ -65,20 +78,6 @@ else
 	hc=false
 	log_to_hc=false
 fi
-
-# print message to echo, log, and popup
-print_message()
-{
-    urgency="$1"
-    msg="$2"
-    message="${urgency}: $job_name $msg"
-
-    echo "$message"
-    send_to_log "$(date +%F_%T) $message"
-    warning_icon="/usr/share/icons/Adwaita/32x32/emblems/emblem-synchronizing.png"   # path in Fedora 28
-    # notify-send is a popup notification on most Linux desktops, install `libnotify-bin`
-    command -v notify-send && notify-send --urgency critical --icon "$warning_icon" "$message"
-}
 
 ################################# range checks ################################
 # if source string is empty
@@ -123,7 +122,7 @@ fi
 
 # notify healthchecks.io to measure command run time
 if [ "$hc" = true ]; then
-    curl -fsS --retry 3 --quiet "$monitoring_url/start" -O /dev/null
+    curl -fsS --retry 3 "$monitoring_url/start" > /dev/null
     exit 0
 fi
 
@@ -151,13 +150,13 @@ if [ "$exit_code" -eq 0 ]; then            # if no errors
     send_to_log "$confirmation"
     send_to_log ""
     if [ "$hc" = true ]; then
-		curl -fsS --retry 3 --quiet "$monitoring_url" -O /dev/null
+		curl -fsS --retry 3 "$monitoring_url" > /dev/null
     fi
     exit 0
 else
     print_message "ERROR" "failed.  rclone exit_code=$exit_code"
     if [ "$hc" = true ]; then
-		curl -fsS --retry 3 --data-raw "$output" "$monitoring_url/fail" -O /dev/null
+		curl -fsS --retry 3 --data-raw "$output" "$monitoring_url/fail" > /dev/null
     fi
     send_to_log ""
     exit 1
