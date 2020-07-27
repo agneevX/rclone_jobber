@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/bin/bash
 # rclone_jobber.sh version 1.5.6
 # Tutorial, backup-job examples, and source code at https://github.com/wolfv6/rclone_jobber
 # Logging options are headed by "# set log".  Details are in the tutorial's "Logging options" section.
@@ -40,10 +40,10 @@ if [ "$log" = true ]; then
 	path="$(realpath "$0")"                 # this will place log in the same directory as this script
 	log_file="${path%.*}.log"
 	#log_file="/var/log/rclone_jobber.log" 
-	
+
 	log_option="--log-file=$log_file"       # log to log_file
 	#log_option="--syslog"                  # log to systemd journal
-	
+
 	send_to_log()
 	{
 	    msg="$1"
@@ -60,7 +60,7 @@ if [[ "$monitoring_url" = *"hc.io"* ]]; then
 	hc=true
 	log_to_hc=true		# set this to false if you want to store logs locally or not send to healthchecks
 	# log_option="-q"	# no logs including errors are sent to healthchecks
-	log_option="" 		# set to -v to send INFO logs, or -vv to send INFO and DEBUG logs 
+	log_option="" 		# set to -v to send INFO logs, or -vv to send INFO and DEBUG logs
 else
 	hc=false
 	log_to_hc=false
@@ -141,7 +141,7 @@ fi
 #send_to_log "$timestamp $job_name"
 #send_to_log "$cmd"
 
-eval $cmd
+eval "$cmd"
 exit_code=$?
 
 ############################ confirmation and logging ########################
