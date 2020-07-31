@@ -127,7 +127,7 @@ if [ "$exit_code" -eq 0 ]; then            #if no errors
     send_to_log "$confirmation"
     send_to_log ""
     if [ ! -z "$monitoring_URL" ]; then
-        curl -fsS --retry 3 "$monitoring_URL" -O /dev/null
+        curl -fsS --retry 3 "$monitoring_URL" > /dev/null
     fi
     exit 0
 else
