@@ -14,69 +14,62 @@
 # rclone_jobber is not affiliated with rclone.
 
 ################################# parameters #################################
-source="$1"            # the directory to back up (without a trailing slash)
-dest="$2"              # the directory to back up to (without a trailing slash or "last_snapshot") destination=$dest/last_snapshot
-move_old_files_to="$3" # move_old_files_to is one of:
+source="$1"            #the directory to back up (without a trailing slash)
+dest="$2"              #the directory to back up to (without a trailing slash or "last_snapshot") destination=$dest/last_snapshot
+move_old_files_to="$3" #move_old_files_to is one of:
                        # "dated_directory" - move old files to a dated directory (an incremental backup)
                        # "dated_files"     - move old files to old_files directory, and append move date to file names (an incremental backup)
                        # ""                - old files are overwritten or deleted (a plain one-way sync backup)
-options="$4"           # rclone options like "--filter-from=filter_patterns --checksum --log-level="INFO" --dry-run"
-                       # do not put these in options: --backup-dir, --suffix, --log-file
-job_name="$5"          # job_name="$(basename $0)"
-monitoring_url="$6"    # cron monitoring service URL to send email if cron failure or other error prevented back up
+options="$4"           #rclone options like "--filter-from=filter_patterns --checksum --log-level="INFO" --dry-run"
+                       #do not put these in options: --backup-dir, --suffix, --log-file
+job_name="$5"          #job_name="$(basename $0)"
+monitoring_url="$6"    #cron monitoring service URL to send email if cron failure or other error prevented back up
 
 ################################ set variables ###############################
 # $new is the directory name of the current snapshot
 # $timestamp is time that old file was moved out of new (not time that file was copied from source)
 new="last_snapshot"
 timestamp="$(date +%F_%T)"
-#timestamp="$(date +%F_%H%M%S)"  # time w/o colons if thumb drive is FAT format, which does not allow colons in file name
+#timestamp="$(date +%F_%H%M%S)"  #time w/o colons if thumb drive is FAT format, which does not allow colons in file name
 
-################################ logging options #############################
-# set to false if you want to turn off logging
-log=true
-if [ "$log" = true ]; then
-	# set log_file path
-	path="$(realpath "$0")"                 # this will place log in the same directory as this script
-	log_file="${path%.*}.log"
-	#log_file="/var/log/rclone_jobber.log"
+# set log_file path
+path="$(realpath "$0")"                 #this will place log in the same directory as this script
+log_file="${path%.*}.log"               #replace path extension with "log"
+#log_file="/var/log/rclone_jobber.log"  #for Logrotate
 
-	log_option="--log-file=$log_file"       # log to log_file
-	#log_option="--syslog"                  # log to systemd journal
+# set log_option for rclone
+log_option="--log-file=$log_file"       #log to log_file
+#log_option="--syslog"                  #log to systemd journal
 
-	send_to_log()
-	{
-	    msg="$1"
- 	   # set log - send msg to log
- 	   echo "$msg" >> "$log_file"                             # log msg to log_file
- 	   #printf "$msg" | systemd-cat -t RCLONE_JOBBER -p info   # log msg to systemd journal
-	}
-	# print message to echo, log, and popup
-	print_message()
-	{
-	    urgency="$1"
-	    msg="$2"
-	    message="${urgency}: $job_name $msg"
+################################## functions #################################
+send_to_log()
+{
+    msg="$1"
 
-	    echo "$message"
- 	   send_to_log "$(date +%F_%T) $message"
- 	   warning_icon="/usr/share/icons/Adwaita/32x32/emblems/emblem-synchronizing.png"   # path in Fedora 28
- 	   # notify-send is a popup notification on most Linux desktops, install `libnotify-bin`
- 	   command -v notify-send && notify-send --urgency critical --icon "$warning_icon" "$message"
-	}
-else
-	log_option=""
-fi
+    # set log - send msg to log
+    echo "$msg" >> "$log_file"                             #log msg to log_file
+    #printf "$msg" | systemd-cat -t RCLONE_JOBBER -p info   #log msg to systemd journal
+}
+
+# print message to echo, log, and popup
+print_message()
+{
+    urgency="$1"
+    msg="$2"
+    message="${urgency}: $job_name $msg"
+
+    echo "$message"
+    send_to_log "$(date +%F_%T) $message"
+    warning_icon="/usr/share/icons/Adwaita/32x32/emblems/emblem-synchronizing.png"   #path in Fedora 28
+    # notify-send is a popup notification on most Linux desktops, install libnotify-bin
+    command -v notify-send && notify-send --urgency critical --icon "$warning_icon" "$message"
+}
 
 ############################### healthchecks.io ###############################
 if [[ "$monitoring_url" = *"hc.io"* ]]; then
 	hc=true
-	log_to_hc=true		# set this to false if you want to store logs locally or not send to healthchecks
-	# log_option="-q"	# no logs including errors are sent to healthchecks
-	log_option="" 		# set to -v to send INFO logs, or -vv to send INFO and DEBUG logs
 else
 	hc=false
-	log_to_hc=false
 fi
 
 ################################# range checks ################################
@@ -127,20 +120,20 @@ if [ "$hc" = true ]; then
 fi
 
 ################################### back up ##################################
-if [ "$hc" = false ] || [ "$log_to_hc" = false ]; then
+if [ "$hc" = true ]; then
+	output=$("rclone sync $source $dest/$new $backup_dir $options")
+else
 	cmd="rclone sync $source $dest/$new $backup_dir $log_option $options"
 	# progress message
 	echo "Back up in progress $timestamp $job_name"
 	echo "$cmd"
-elif [ "$log_to_hc" = true ]; then
-	output=$("rclone sync $source $dest/$new $backup_dir $log_option $options")
 fi
 
 # set logging to verbose
 #send_to_log "$timestamp $job_name"
 #send_to_log "$cmd"
 
-eval "$cmd"
+eval $cmd
 exit_code=$?
 
 ############################ confirmation and logging ########################
@@ -155,9 +148,9 @@ if [ "$exit_code" -eq 0 ]; then            # if no errors
     exit 0
 else
     print_message "ERROR" "failed.  rclone exit_code=$exit_code"
+    send_to_log ""
     if [ "$hc" = true ]; then
 		curl -fsS --retry 3 --data-raw "$output" "$monitoring_url/fail" > /dev/null
     fi
-    send_to_log ""
     exit 1
 fi
