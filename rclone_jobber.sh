@@ -142,7 +142,7 @@ if [ "$exit_code" -eq 0 ]; then            # if no errors
     echo "$confirmation"
     send_to_log "$confirmation"
     send_to_log ""
-    if [ "$hc" = true ]; then
+    if [ -n "$monitoring_url" ]; then
 		curl -fsS --retry 3 "$monitoring_url" > /dev/null
     fi
     exit 0
