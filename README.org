@@ -1,17 +1,19 @@
 * About rclone_jobber backup script
 [[./rclone_jobber.sh][rclone_jobber.sh]] is a shell script to make backups.
-It performs backup jobs by calling rclone.
-[[https://rclone.org/][Rclone]] is a mature tool and many [[https://github.com/ncw/rclone/wiki/Third-Party-Integrations-with-rclone][third-party tools use rclone]].
+It performs backup jobs by calling `rclone`.
+
+[[https://rclone.org/][rclone]] is a mature tool and many [[https://github.com/ncw/rclone/wiki/Third-Party-Integrations-with-rclone][third-party tools use rclone]].
 
 The [[file:rclone_jobber_tutorial.org][rclone jobber tutorial]] includes backup-job and restore-job examples for a home computer.
 
-*rclone_jobber.sh features:*
-- Tested on Linux, and should also run on macOS and [[https://docs.microsoft.com/en-us/windows/wsl/about][Windows 10 wsl]]
+*`rclone_jobber.sh` features:*
+- Tested on Linux, and should also run on macOS and [[https://docs.microsoft.com/en-us/windows/wsl/about][Windows 10 WSL]]
 - Options to archive old backup files in their original hierarchy
 - Can backup to multiple destinations for redundant backups (one backup job per destination)
 - Aborts if the backup job is already running (maybe the previous run didn't finish)
 - Pop-up for error conditions
 - Option for a cron-monitoring service
+  - Support for Healthchecks.io monitoring service
 - Logging
 - POSIX compliant shell script so it is easy to customize
 - Free (open source Creative Commons Zero license)
@@ -31,11 +33,11 @@ The [[file:rclone_jobber_tutorial.org][rclone jobber tutorial]] includes backup-
 - Partial syncs supported on a whole file basis
 - Free (open source MIT license)
 
-Both rclone and rclone_jobber.sh are command line tools.
+Both `rclone` and `rclone_jobber.sh` are command line tools.
 If you prefer a GUI, checkout [[https://mmozeiko.github.io/RcloneBrowser/][RcloneBrowser]].
 
 * Example job scripts
-rclone_jobber.sh is already developed, documented, and tested.
+`rclone_jobber.sh` is already developed, documented, and tested.
 Only the backup-job files need to be written.
 
 Example minimal backup-job script for rclone_jobber:
