@@ -67,7 +67,7 @@ print_message()
 
 ############################### healthchecks.io ###############################
 if [[ "$monitoring_url" = *"hc.io"* ]]; then hc=true
-else hc=false
+    else hc=false
 fi
 
 ################################# range checks ################################
@@ -131,7 +131,7 @@ fi
 #send_to_log "$timestamp $job_name"
 #send_to_log "$cmd"
 
-eval $cmd
+eval "$cmd"
 exit_code=$?
 
 ############################ confirmation and logging ########################
