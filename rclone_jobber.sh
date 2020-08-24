@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env sh
 # rclone_jobber.sh version 1.5.6
 # Tutorial, backup-job examples, and source code at https://github.com/wolfv6/rclone_jobber
 # Logging options are headed by "# set log".  Details are in the tutorial's "Logging options" section.
@@ -66,10 +66,8 @@ print_message()
 }
 
 ############################### healthchecks.io ###############################
-if [[ "$monitoring_url" = *"hc.io"* ]]; then
-	hc=true
-else
-	hc=false
+if [[ "$monitoring_url" = *"hc.io"* ]]; then hc=true
+else hc=false
 fi
 
 ################################# range checks ################################
@@ -121,12 +119,12 @@ fi
 
 ################################### back up ##################################
 if [ "$hc" = true ]; then
-	output=$("rclone sync $source $dest/$new $backup_dir $options")
+    output=$("rclone sync $source $dest/$new $backup_dir $options")
 else
-	cmd="rclone sync $source $dest/$new $backup_dir $log_option $options"
-	# progress message
-	echo "Back up in progress $timestamp $job_name"
-	echo "$cmd"
+    cmd="rclone sync $source $dest/$new $backup_dir $log_option $options"
+    # progress message
+    echo "Back up in progress $timestamp $job_name"
+    echo "$cmd"
 fi
 
 # set logging to verbose
@@ -143,14 +141,14 @@ if [ "$exit_code" -eq 0 ]; then            # if no errors
     send_to_log "$confirmation"
     send_to_log ""
     if [ -n "$monitoring_url" ]; then
-		curl -fsS --retry 3 "$monitoring_url" > /dev/null
+        curl -fsS --retry 3 "$monitoring_url" > /dev/null
     fi
     exit 0
 else
     print_message "ERROR" "failed.  rclone exit_code=$exit_code"
     send_to_log ""
     if [ "$hc" = true ]; then
-		curl -fsS --retry 3 --data-raw "$output" "$monitoring_url/fail" > /dev/null
+        curl -fsS --retry 3 --data-raw "$output" "$monitoring_url/fail" > /dev/null
     fi
     exit 1
 fi
