@@ -66,8 +66,10 @@ print_message()
 }
 
 ############################### healthchecks.io ###############################
-if [[ "$monitoring_url" = *"hc.io"* ]]; then hc=true
-    else hc=false
+if [[ "$monitoring_url" = *"hc.io"* ]]; then
+    hc="true"
+else
+    hc="false"
 fi
 
 ################################# range checks ################################
@@ -112,13 +114,13 @@ elif [ "$move_old_files_to" != "" ]; then
 fi
 
 # notify healthchecks.io to measure command run time
-if [ "$hc" = true ]; then
+if [ "$hc" = "true" ]; then
     curl -fsS --retry 3 "$monitoring_url/start" > /dev/null
     exit 0
 fi
 
 ################################### back up ##################################
-if [ "$hc" = true ]; then
+if [ "$hc" = "true" ]; then
     output=$("rclone sync $source $dest/$new $backup_dir $options")
 else
     cmd="rclone sync $source $dest/$new $backup_dir $log_option $options"
@@ -147,7 +149,7 @@ if [ "$exit_code" -eq 0 ]; then            # if no errors
 else
     print_message "ERROR" "failed.  rclone exit_code=$exit_code"
     send_to_log ""
-    if [ "$hc" = true ]; then
+    if [ "$hc" = "true" ]; then
         curl -fsS --retry 3 --data-raw "$output" "$monitoring_url/fail" > /dev/null
     fi
     exit 1
